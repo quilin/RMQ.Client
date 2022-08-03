@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using RabbitMQ.Client;
 using RMQ.Client.Abstractions;
 using RMQ.Client.Abstractions.Producing;
 using RMQ.Client.Connection;
@@ -11,7 +12,7 @@ internal class Producer : IProducer
     private readonly IChannelPool channelPool;
     private readonly IServiceProvider serviceProvider;
     private readonly RabbitProducerParameters parameters;
-    private readonly ProducerDelegate pipeline;
+    private readonly ProducerDelegate<IBasicProperties> pipeline;
 
     private Lazy<IChannelAdapter> channelAccessor;
 
@@ -19,13 +20,13 @@ internal class Producer : IProducer
         IChannelPool channelPool,
         IServiceProvider serviceProvider,
         RabbitProducerParameters parameters,
-        IEnumerable<Func<ProducerDelegate, ProducerDelegate>> middlewares)
+        IEnumerable<Func<ProducerDelegate<IBasicProperties>, ProducerDelegate<IBasicProperties>>> middlewares)
     {
         this.channelPool = channelPool;
         this.serviceProvider = serviceProvider;
         this.parameters = parameters;
 
-        pipeline = middlewares.Reverse().Aggregate((ProducerDelegate)SendMessage,
+        pipeline = middlewares.Reverse().Aggregate((ProducerDelegate<IBasicProperties>)SendMessage,
             (current, component) => component(current));
         channelAccessor = CreateChannelAccessor();
     }
@@ -63,11 +64,14 @@ internal class Producer : IProducer
         await using var scope = serviceProvider.CreateAsyncScope();
 
         var basicProperties = channelAccessor.Value.Channel.CreateBasicProperties();
-        var context = new ProducerContext(basicProperties, routingKey, message, scope.ServiceProvider);
+        var context = new ProducerContext<IBasicProperties>(routingKey, message, scope.ServiceProvider)
+        {
+            NativeProperties = basicProperties
+        };
         await pipeline.Invoke(context);
     }
 
-    private Task SendMessage(ProducerContext context)
+    private Task SendMessage(ProducerContext<IBasicProperties> context)
     {
         var channelAdapter = channelAccessor.Value;
         var channel = channelAdapter.Channel;

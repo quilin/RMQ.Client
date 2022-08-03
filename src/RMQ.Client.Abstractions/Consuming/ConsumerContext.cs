@@ -9,7 +9,7 @@ public class ConsumerContext<TMessage> : ConsumerContext
     {
     }
 
-    internal static ConsumerContext<TMessage> From(ConsumerContext context) =>
+    internal static ConsumerContext<TMessage>From(ConsumerContext context) =>
         context switch
         {
             ConsumerContext<TMessage> genericContext => genericContext,
@@ -43,7 +43,7 @@ public abstract class ConsumerContext
     /// <summary>
     /// Values to share between the pipeline steps
     /// </summary>
-    public IDictionary<string, object> StoredValues { get; internal set; } = new Dictionary<string, object>();
+    public IDictionary<string, object> StoredValues { get; internal init; } = new Dictionary<string, object>();
 
     protected ConsumerContext(
         BasicDeliverEventArgs deliverEventArgs,

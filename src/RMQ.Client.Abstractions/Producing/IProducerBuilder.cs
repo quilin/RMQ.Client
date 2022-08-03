@@ -8,9 +8,17 @@ public interface IProducerBuilder
     /// <summary>
     /// Add middleware to pipeline
     /// </summary>
-    /// <param name="middleware">Middleware </param>
+    /// <param name="middleware">Middleware</param>
     /// <returns>Builder itself for chaining</returns>
     IProducerBuilder With(Func<ProducerDelegate, ProducerDelegate> middleware);
+
+    /// <summary>
+    /// Add middleware of given type to the pipeline
+    /// </summary>
+    /// <param name="middlewareType">Middleware type</param>
+    /// <param name="args">Middleware constructor arguments</param>
+    /// <returns>Builder itself for chaining</returns>
+    IProducerBuilder WithMiddleware(Type middlewareType, params object[] args);
 
     /// <summary>
     /// Remove all middlewares from pipeline
